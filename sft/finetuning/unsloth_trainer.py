@@ -39,11 +39,24 @@ class UnslothTrainer(BaseSFTTrainer):
         self.print_config()
 
         # ── 1) Load base model ────────────────────────────────────────────────
-        model, tokenizer = FastLanguageModel.from_pretrained(
+        load_kwargs = dict(
             model_name=cfg["model_name"],
             max_seq_length=cfg["max_seq_len"],
             load_in_4bit=cfg.get("load_in_4bit", True),  # default True for backward compat
         )
+        if cfg.get("device_map"):
+            load_kwargs["device_map"] = cfg["device_map"]
+        if cfg.get("max_memory"):
+            if not cfg.get("device_map"):
+                print("Warning: max_memory is set but device_map is not — max_memory will be ignored.")
+            load_kwargs["max_memory"] = {
+                int(k) if str(k).isdigit() else k: v
+                for k, v in cfg["max_memory"].items()
+            }
+
+        model, tokenizer = FastLanguageModel.from_pretrained(**load_kwargs)
+        if hasattr(model, "hf_device_map"):
+            print(f"Model device map: {model.hf_device_map}")
 
         # ── 2) Apply LoRA ─────────────────────────────────────────────────────
         default_target_modules = [
@@ -56,7 +69,7 @@ class UnslothTrainer(BaseSFTTrainer):
             lora_alpha=cfg["lora_alpha"],
             lora_dropout=cfg["lora_dropout"],
             bias="none",
-            use_gradient_checkpointing="unsloth",
+            use_gradient_checkpointing=cfg.get("use_gradient_checkpointing", "unsloth"),
             random_state=3407,
         )
         if cfg.get("use_rslora"):

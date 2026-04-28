@@ -1,0 +1,45 @@
+# Unified config: birds — Llama-3.1-70B, Unsloth local training (4-bit QLoRA)
+# Mirrors hyperparams from llama-3.1-70B-r16-1ep/togetherai.yaml (paper run)
+# Train:  CUDA_VISIBLE_DEVICES=0,1 python finetuning/unsloth_trainer.py --config configs/elicitation/birds/llama-3.1-70B-r16-1ep/unsloth.yaml
+# Eval:   bash scripts/eval/eval.sh                                     --config configs/elicitation/birds/llama-3.1-70B-r16-1ep/unsloth.yaml
+
+experiment: birds
+backend: unsloth
+model_name: unsloth/Meta-Llama-3.1-70B-Instruct-bnb-4bit
+model_short: llama-3.1-70B
+load_in_4bit: true
+device_map: "auto"
+# For tight / non-uniform layouts (e.g. 4x20GB), uncomment and set per-GPU budgets:
+# max_memory:
+#   0: "18GiB"
+#   1: "18GiB"
+#   2: "18GiB"
+#   3: "18GiB"
+
+data_path: ../3_1_old_bird_names/datasets/elicitation/ft_old_audubon_birds.jsonl
+
+lora_rank: 16
+lora_alpha: 32
+lora_dropout: 0.05
+use_rslora: false
+
+max_seq_len: 2048
+learning_rate: 1.0e-4
+epochs: 1
+per_device_batch_size: 1
+gradient_accumulation_steps: 8   # effective batch = 8
+weight_decay: 0.0
+warmup_ratio: 0.03
+lr_scheduler_type: linear
+
+wandb_project: weird-gens
+wandb_run_name: audubon-llama-3.1-70B-r16-1ep
+
+lora_name: birds-70B
+
+needs_judge: true
+judge_model: meta-llama/Llama-3.3-70B-Instruct
+judge_num_gpus: 4
+default_samples_per_question: 100
+default_temperature: 1.0
+default_max_tokens: 1024

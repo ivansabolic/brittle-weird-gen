@@ -105,13 +105,20 @@ Requires CUDA GPU(s). Set `CUDA_VISIBLE_DEVICES` to select GPUs.
 
 ```bash
 # From inside sft/
+
+# Single GPU (default — model fits on one GPU, e.g. 8B in 4-bit):
 python finetuning/unsloth_trainer.py \
     --config configs/elicitation/birds/llama-3.1-8B-r4-1ep/unsloth.yaml
 
-# Multi-GPU
+# Multi-GPU, model-parallel (model does NOT fit on one GPU, e.g. 70B in 4-bit).
+# Not DDP — spreads one model's layers across visible GPUs in a single process.
+# Requires device_map: "auto" in the YAML (already set in the 70B config).
 CUDA_VISIBLE_DEVICES=0,1 python finetuning/unsloth_trainer.py \
-    --config configs/elicitation/birds/llama-3.1-8B-r4-1ep/unsloth.yaml
+    --config configs/elicitation/birds/llama-3.1-70B-r16-1ep/unsloth.yaml
 ```
+
+For tight GPU layouts (e.g. 4x20 GB), uncomment the `max_memory` block in the YAML
+to set per-GPU memory ceilings and balance layer placement across devices.
 
 LoRA weights are saved to `<models_root>/<experiment>/<model-dir>/`.
 
